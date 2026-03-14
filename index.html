@@ -16805,35 +16805,65 @@ function initSystemeDe() {
         function partagerLienVideo() {
             const code = currentGameCode || 'ESPOYR';
             const lien = `https://meet.jit.si/ESPOYR_${code}`;
-
-            // Copier dans le presse-papiers
-            copyToClipboard(lien);
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
             // Envoyer dans le chat pour que tous les joueurs le voient
             if (gameRef) {
-                sendSystemMessage(`📹 Vidéo conférence — clique ce lien pour rejoindre : ${lien}`);
+                sendSystemMessage(`📹 Vidéo conférence — lien : ${lien}`);
             }
 
-            // Afficher un modal de confirmation avec le lien cliquable
+            // Sur mobile : utiliser l'API Web Share si disponible
+            if (isMobile && navigator.share) {
+                navigator.share({
+                    title: 'ESPOYR — Vidéo conférence',
+                    text: `Rejoins la vidéo conférence de la partie ESPOYR !`,
+                    url: lien
+                }).catch(() => {
+                    // Si l'utilisateur annule, on affiche quand même le modal
+                    afficherModalVideo(lien, isMobile);
+                });
+                return;
+            }
+
+            // Sur desktop : copier dans le presse-papiers
+            if (!isMobile) {
+                copyToClipboard(lien);
+            }
+
+            afficherModalVideo(lien, isMobile);
+        }
+
+        function afficherModalVideo(lien, isMobile) {
             showModal(`
                 <h3>📹 Vidéo conférence</h3>
                 <p style="font-size:0.9rem; margin-bottom:12px;">
-                    Un lien unique a été créé pour cette partie.<br>
-                    Il a été <strong>copié</strong> dans ton presse-papiers et <strong>partagé dans le chat</strong> pour tous les joueurs.
+                    ${isMobile
+                        ? 'Appuie sur le lien ci-dessous pour rejoindre ou le partager.'
+                        : 'Lien copié dans ton presse-papiers et partagé dans le chat.'}
                 </p>
-                <div style="background:#f0fdf4; border:2px solid #10b981; border-radius:10px; padding:12px; text-align:center; margin-bottom:12px;">
-                    <a href="${lien}" target="_blank" 
-                       style="color:#059669; font-weight:bold; font-size:0.95rem; word-break:break-all;">
+                <div style="background:#f0fdf4; border:2px solid #10b981; border-radius:10px; padding:14px; text-align:center; margin-bottom:12px;">
+                    <a href="${lien}" target="_blank"
+                       style="color:#059669; font-weight:bold; font-size:0.9rem; word-break:break-all; text-decoration:underline;">
                         ${lien}
                     </a>
                 </div>
+                ${isMobile ? `
+                <div style="background:#fef3c7; border-radius:8px; padding:10px; margin-bottom:10px; font-size:0.82rem; color:#92400e;">
+                    📱 <strong>Sur smartphone :</strong><br>
+                    1. Appuie sur "Rejoindre" — s'ouvre dans ton navigateur<br>
+                    2. Ou appuie sur "Partager" pour envoyer le lien par SMS / WhatsApp
+                </div>
+                ` : `
                 <p style="font-size:0.82rem; color:#6b7280;">
-                    Chaque joueur clique sur ce lien pour rejoindre la même salle vidéo.<br>
-                    Fonctionne sur tous les navigateurs et appareils.<br>
-                    Aucun compte requis.
+                    Chaque joueur clique sur ce lien pour rejoindre.<br>
+                    Aucun compte requis. Fonctionne sur tous les appareils.
                 </p>
+                `}
             `, `
-                <button class="btn btn-primary" onclick="window.open('${lien}', '_blank'); closeModal();">📹 Rejoindre maintenant</button>
+                <button class="btn btn-primary" onclick="window.open('${lien}', '_blank'); closeModal();">📹 Rejoindre</button>
+                ${isMobile && navigator.share ? `
+                <button class="btn" style="background:#dbeafe;color:#2563eb;" onclick="navigator.share({title:'ESPOYR Vidéo',url:'${lien}'})">📤 Partager</button>
+                ` : ''}
                 <button class="btn btn-secondary" onclick="closeModal()">Fermer</button>
             `);
         }
