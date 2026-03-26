@@ -26,11 +26,15 @@
         h2 { color: var(--green-dark); margin-bottom: 12px; font-size: 1.2rem; }
         .subtitle { text-align: center; color: var(--gray); margin-bottom: 20px; font-size: 0.9rem; }
         .btn {
-            padding: 10px 20px; border: none; border-radius: 10px;
-            font-size: 0.95rem; font-weight: 600; cursor: pointer;
-            transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
-        }
-        .btn:hover { transform: translateY(-2px); }
+    padding: 10px 20px; border: none; border-radius: 10px;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+       @media (hover: hover) and (pointer: fine) {
+    .btn:hover { transform: translateY(-2px); }
+}
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         .btn-primary { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: white; }
         .btn-secondary { background: linear-gradient(135deg, var(--blue), #2563eb); color: white; }
@@ -97,7 +101,9 @@
             align-items: center; justify-content: flex-start; padding-top: 4px; font-size: 0.65rem;
             position: relative; cursor: pointer; transition: all 0.2s;
         }
-        .case:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10; }
+        @media (hover: hover) and (pointer: fine) {
+    .case:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10; }
+}
         .case.start { background: linear-gradient(135deg, #dcfce7, #bbf7d0); }
         .case.activite { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 2px solid #d97706; }
         .case.activite.owned { border-width: 3px; border-color: #059669; }
@@ -352,6 +358,65 @@
         .bilan-table .actif { background: #dcfce7; }
         .bilan-table .passif { background: #fee2e2; }
         .bilan-table .total { font-weight: bold; background: #fef3c7; }
+
+        /* ===== OVERLAY TRANSITION DE PHASE ===== */
+        #phaseOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            /* iOS safe area */
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            z-index: 10001; /* au-dessus du dé animé (10000) */
+            align-items: center; justify-content: center;
+            /* Fix iOS Safari scroll */
+            -webkit-overflow-scrolling: touch;
+            overflow: hidden;
+            /* Fix iOS fixed positioning */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            animation: phaseOverlayFadeIn 0.5s ease;
+        }
+        #phaseOverlay.visible { display: flex; }
+        @keyframes phaseOverlayFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .phase-overlay-inner {
+            max-width: 480px; width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 20px; padding: 30px 24px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: phaseOverlaySlide 0.5s ease;
+        }
+        @keyframes phaseOverlaySlide {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .phase-overlay-inner h2 { margin: 0 0 12px 0; font-size: 1.6rem; }
+        .phase-overlay-inner .phase-cause {
+            font-size: 0.85rem; opacity: 0.85;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px; padding: 8px 12px; margin: 12px 0;
+            font-style: italic;
+        }
+        .phase-overlay-inner p { margin: 10px 0; font-size: 0.95rem; line-height: 1.5; }
+        .phase-overlay-btn {
+            margin-top: 20px; padding: 12px 28px;
+            border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
+            background: rgba(255,255,255,0.25);
+            color: white; border: 2px solid rgba(255,255,255,0.5);
+            transition: background 0.2s;
+        }
+        .phase-overlay-btn:hover { background: rgba(255,255,255,0.4); }
+        .phase-overlay-waiting {
+            margin-top: 16px; font-size: 0.82rem;
+            opacity: 0.7; font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -360,13 +425,14 @@
     <div class="container">
         <!-- ÉCRAN ACCUEIL -->
         <div id="homeScreen" class="card">
-            <h1><img src="logo__#G1_jaune_rond.png" alt="Logo ESPOYR" style="height: 1.5em; vertical-align: middle; margin-right: 8px;">ESPOYR</h1>
+            <h1><img src="logo__g1_jaune_rond.png" alt="Logo ESPOYR" style="height: 1.5em; vertical-align: middle; margin-right: 8px;">ESPOYR</h1>
             <p class="subtitle">Jeu collaboratif d'économie - V3 Comptabilité complète</p>
             <div class="error-message" id="errorMessage"></div>
             
             <div style="margin-bottom: 15px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                <a href="https://docs.google.com/document/d/1fTV-keDtwbxwTQPUuj4JCEN-sUBkqvRx/edit?usp=sharing&ouid=114447202650775631504&rtpof=true&sd=true" 
-                   target="_blank" rel="noopener noreferrer"
+                <a href="https://docs.google.com/document/d/1fTV-keDtwbxwTQPUuj4JCEN-sUBkqvRx/export?format=pdf"
+                   target="_blank" 
+                   rel="noopener noreferrer"
                    style="display: inline-block; padding: 10px 20px; background: #f0fdf4; border: 2px solid #059669; border-radius: 8px; color: #065f46; font-weight: 600; text-decoration: none; font-size: 0.95rem;">
                     📖 Explications détaillées et règles
                 </a>
@@ -493,6 +559,13 @@
                         <div class="dice" id="dice">🎲</div>
                         <button class="btn btn-orange" id="rollDiceBtn" onclick="rollDice()">🎲 Lancer</button>
                     </div>
+                 <div id="gameCodeDisplay" style="display: none; text-align: center; margin-top: 8px; padding: 8px 12px; background: #dcfce7; color: #065f46; border-radius: 10px; font-weight: 600;">
+    Connecté · Code ------
+</div>
+
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                        <button class="btn" style="background: #ecfdf5; color: #065f46; flex: 1; font-weight: 600;" onclick="partagerLienVideo()">📹 Vidéo conférence</button>
+                    </div>
                     
                     <!-- ACTIONS RAPIDES -->
                     <div style="background: #f8fafc; padding: 8px; border-radius: 8px; margin: 10px 0;">
@@ -530,9 +603,9 @@
                         <button class="btn" id="configBtn" style="background: #e5e7eb; color: #374151; flex: 1; display: none;" onclick="showConfigModal()">⚙️ Config</button>
                         <button class="btn" id="endGameBtn" style="background: #fee2e2; color: #dc2626; flex: 1; display: none;" onclick="showEndGameConfirm()">🏁 Fin de partie</button>
                     </div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                        <button class="btn" style="background: #ecfdf5; color: #065f46; flex: 1; font-weight: 600;" onclick="partagerLienVideo()">📹 Vidéo conférence</button>
-                    </div>
+
+
+                 
                 </div>
                 
                 <div class="side-panel">
@@ -550,6 +623,7 @@
     </div>
     
     <div id="modalContainer"></div>
+    <div id="phaseOverlay"></div>
     <div class="live-toast-container" id="liveToastContainer"></div>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -1083,16 +1157,35 @@
 
         function getResumeKey(code) { return `${RESUME_KEY_PREFIX}${code}`; }
 
-        function saveResume(code, data) {
-            try { localStorage.setItem(getResumeKey(code), JSON.stringify(data)); } catch(e) {}
-        }
+       function storageDisponible() {
+    try {
+        const testKey = '__test_storage__';
+        localStorage.setItem(testKey, 'ok');
+        localStorage.removeItem(testKey);
+        return true;
+    } catch (e) {
+        return false;
+    }
+     }
+function saveResume(code, data) {
+    try {
+        if (!storageDisponible()) return;
+        localStorage.setItem(getResumeKey(code), JSON.stringify(data));
+    } catch (e) {}
+}
+        
 
-        function loadResume(code) {
-            try {
-                const raw = localStorage.getItem(getResumeKey(code));
-                return raw ? JSON.parse(raw) : null;
-            } catch(e) { return null; }
-        }
+
+     
+       function loadResume(code) {
+    try {
+        if (!storageDisponible()) return null;
+        const raw = localStorage.getItem(getResumeKey(code));
+        return raw ? JSON.parse(raw) : null;
+    } catch(e) { 
+        return null; 
+    }
+}
 
         function parseResumeTicket(ticketRaw) {
             if (!ticketRaw) return null;
@@ -5148,7 +5241,9 @@ activiteId: actId
             const caisse = COMPTABILITE.caisseJoueurs[joueurId];
             
             const patrimoine = calculerPatrimoine(joueurId);
-            const taxeBase = Math.floor(patrimoine * 0.10);
+            // Taux dynamique en Phase 3, fixe 10% sinon
+            const tauxCourant = (gameState?.tauxTaxePhase3 ?? 0.10);
+            const taxeBase = Math.floor(patrimoine * tauxCourant);
             const taxe = Math.floor(taxeBase * modificateur);
             
             if (taxe <= 0) return { patrimoine: 0, taxeBase: 0, taxe: 0, modificateur, paye: 0, impaye: 0 };
@@ -5392,9 +5487,19 @@ activiteId: actId
         // ========== UI HELPERS ==========
         
         function showScreen(screenId) {
-            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-            document.getElementById(screenId).classList.remove('hidden');
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById(screenId).classList.remove('hidden');
+
+    const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+    if (gameCodeDisplay) {
+        if (screenId === 'gameScreen' && currentGameCode) {
+            gameCodeDisplay.textContent = ` Connecté · Code ${currentGameCode}`;
+            gameCodeDisplay.style.display = 'block';
+        } else {
+            gameCodeDisplay.style.display = 'none';
         }
+    }
+}
         
         function showLobbyOrGame(gameData) {
             const state = gameData?.state || gameData?.status;
@@ -5967,6 +6072,11 @@ if (gameData.status !== 'waiting') { showError('Partie déjà commencée !'); re
             // État
             gameRef.child('state').on('value', (snap) => {
                 gameState = snap.val();
+                // Initialiser l'écoute overlay phase (une seule fois)
+                if (!window._phaseOverlayListenerInit) {
+                    window._phaseOverlayListenerInit = true;
+                    ecouterAnnoncePhase();
+                }
                 
                 // Mettre à jour le sens de déplacement
                 if (gameState?.sensDeplacent) {
@@ -7067,8 +7177,7 @@ function aTraverseLaCase0(posDepart, posArrivee, sens) {
 // On franchit si on passe par la frontière 13→14 (sens +) ou 14→13 (sens -)
 function aTraverseLaLigne3(posDepart, posArrivee, sens) {
     if (posDepart === posArrivee) return false;
-    // Phase 3 : pas de taxe Ligne 3
-    if ((gameState?.phase || 1) >= 3) return false;
+    // La taxe Ligne 3 reste active en Phase 3 (austérité)
     
     let pos = posDepart;
     let prevPos;
@@ -7148,9 +7257,41 @@ async function rollDice() {
                 const decouvert = Math.abs(caisseSk.euro);
                 const interetsDec = arrondir2(decouvert * 0.03);
                 caisseSk.euro -= interetsDec;
+
+                // Écriture comptable banque
+                enregistrerEcritureBanque({
+                    event_type: 'OVERDRAFT_INTEREST',
+                    debit_account: 1010,
+                    credit_account: 4000,
+                    amount: interetsDec,
+                    playerId: joueurActuel.id,
+                    description: `Intérêts découvert 3% (tour passé) sur ${decouvert.toFixed(2)}€`
+                });
+
                 await db.ref(`parties/${currentGameCode}/players/${joueurActuel.id}/euro`).set(caisseSk.euro);
                 await syncComptabiliteToFirebase();
                 sendSystemMessage(`📉 ${joueurActuel.name} : intérêts découvert 3% = -${fmt(interetsDec)}€ (solde: ${fmt(caisseSk.euro)}€)`);
+
+                // Modal bloquant pour le joueur local
+                if (joueurActuel.id === myPlayerId) {
+                    await new Promise(resolve => {
+                        window.__resolveDecouvert = resolve;
+                        showModal(`
+                            <h3>📉 Découvert bancaire</h3>
+                            <div style="background:#fee2e2;padding:12px;border-radius:8px;margin:10px 0;">
+                                <p style="margin:0;font-weight:bold;color:#dc2626;">⚠️ Ton compte est en négatif</p>
+                                <p style="margin:8px 0 0 0;font-size:0.9rem;">
+                                    Découvert : <strong>${fmt(decouvert)}€</strong><br>
+                                    Intérêts 3% prélevés : <strong style="color:#dc2626;">-${fmt(interetsDec)}€</strong><br>
+                                    Nouveau solde : <strong style="color:#dc2626;">${fmt(caisseSk.euro)}€</strong>
+                                </p>
+                            </div>
+                            <div style="background:#fef3c7;padding:10px;border-radius:8px;font-size:0.85rem;">
+                                💡 Tu peux convertir ce découvert en prêt bancaire via le bouton <strong>Emprunter</strong>.
+                            </div>
+                        `, `<button class="btn btn-primary" style="width:100%;" onclick="closeModal(); if(window.__resolveDecouvert){window.__resolveDecouvert(); window.__resolveDecouvert=null;}">✓ Compris</button>`);
+                    });
+                }
             }
             // Décrémenter et passer
             await gameRef.child(`skipTurns/${joueurActuel.id}`).set(skipCount - 1);
@@ -7173,6 +7314,16 @@ async function rollDice() {
             const interetsDecouvert = arrondir2(decouvertAvant * 0.03);
             caisseAvantLancer.euro -= interetsDecouvert;
             
+            // Écriture comptable banque : D:1010 Réserves / C:4000 Produits intérêts
+            enregistrerEcritureBanque({
+                event_type: 'OVERDRAFT_INTEREST',
+                debit_account: 1010,
+                credit_account: 4000,
+                amount: interetsDecouvert,
+                playerId: joueurActuel.id,
+                description: `Intérêts découvert 3% sur ${decouvertAvant.toFixed(2)}€`
+            });
+
             // Compteur de difficultés consécutives (déclencheur social Phase 2)
             const diffSnap = await gameRef.child(`difficulteConsecutive/${joueurActuel.id}`).once('value');
             const diffCount = (diffSnap.val() || 0) + 1;
@@ -7182,6 +7333,29 @@ async function rollDice() {
             await syncComptabiliteToFirebase();
             
             sendSystemMessage(`📉 ${joueurActuel.name} : intérêts découvert 3% = -${fmt(interetsDecouvert)}€ (solde: ${fmt(caisseAvantLancer.euro)}€)`);
+
+            // Modal bloquant — le joueur doit valider avant de lancer
+            if (joueurActuel.id === myPlayerId) {
+                await new Promise(resolve => {
+                    window.__resolveDecouvert = resolve;
+                    showModal(`
+                        <h3>📉 Découvert bancaire</h3>
+                        <div style="background:#fee2e2;padding:12px;border-radius:8px;margin:10px 0;">
+                            <p style="margin:0;font-weight:bold;color:#dc2626;">
+                                ⚠️ Ton compte est en négatif
+                            </p>
+                            <p style="margin:8px 0 0 0;font-size:0.9rem;">
+                                Découvert : <strong>${fmt(decouvertAvant)}€</strong><br>
+                                Intérêts 3% prélevés : <strong style="color:#dc2626;">-${fmt(interetsDecouvert)}€</strong><br>
+                                Nouveau solde : <strong style="color:#dc2626;">${fmt(caisseAvantLancer.euro)}€</strong>
+                            </p>
+                        </div>
+                        <div style="background:#fef3c7;padding:10px;border-radius:8px;font-size:0.85rem;">
+                            💡 Tu peux convertir ce découvert en prêt bancaire (10%/passage Ligne 1) via le bouton <strong>Emprunter</strong>.
+                        </div>
+                    `, `<button class="btn btn-primary" style="width:100%;" onclick="closeModal(); if(window.__resolveDecouvert){window.__resolveDecouvert(); window.__resolveDecouvert=null;}">✓ Compris — Lancer le dé</button>`);
+                });
+            }
             
             // Déclencheur social : 2x de suite en difficulté → Phase 2
             const phase = gameState?.phase || 1;
@@ -8179,6 +8353,80 @@ function initSystemeDe() {
         }
         
         // ========== PHASES ==========
+
+        // ========== OVERLAY TRANSITION DE PHASE ==========
+        function showPhaseOverlay(phase, cause) {
+            // Bloquer scroll body sur iOS
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            const overlay = document.getElementById('phaseOverlay');
+            if (!overlay) return;
+
+            const configs = {
+                2: {
+                    bg: 'linear-gradient(135deg, #b45309 0%, #92400e 100%)',
+                    icon: '📊',
+                    titre: 'Phase 2 — L\'économie se dégrade',
+                    texte: `Les salaires commencent à s'éroder. Chaque passage Ligne 1, le travail rapporte moins.<br><br>
+                            Les membres AAA reçoivent un complément en <strong>#</strong> pour compenser — les autres subissent seuls la perte.<br><br>
+                            <em>C'est le début de la crise. Adaptez-vous.</em>`,
+                },
+                3: {
+                    bg: 'linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%)',
+                    icon: '🌍',
+                    titre: 'Phase 3 — Le système s\'effondre',
+                    texte: `Les salaires chutent de 20% supplémentaires. Les citoyens s'organisent : ils introduisent en complément à l'euro les bons d'achat à usages multiples <strong>Espoyr #</strong> — un outil pour maintenir les services communs et l'économie.<br><br>
+                            <em>Ce que vous vivez ici se passe en ce moment dans le monde réel.</em>`,
+                }
+            };
+
+            const cfg = configs[phase];
+            if (!cfg) return;
+
+            const causeTexte = cause ? `<div class="phase-cause">⚡ ${cause}</div>` : '';
+            const btnHote = isHost
+                ? `<button class="phase-overlay-btn" onclick="fermerAnnoncePhase()">✓ Compris — Continuer la partie</button>`
+                : `<p class="phase-overlay-waiting">⏳ En attente que l'animateur ferme ce message...</p>`;
+
+            overlay.innerHTML = `
+                <div class="phase-overlay-inner" style="background:${cfg.bg}; color:white;">
+                    <h2>${cfg.icon} ${cfg.titre}</h2>
+                    ${causeTexte}
+                    <p>${cfg.texte}</p>
+                    ${btnHote}
+                </div>`;
+            overlay.classList.add('visible');
+        }
+
+        function fermerAnnoncePhase() {
+            // L'hôte efface le nœud Firebase → tous les clients ferment l'overlay
+            if (gameRef) gameRef.child('state/phaseAnnonce').remove();
+            document.getElementById('phaseOverlay')?.classList.remove('visible');
+            // Restaurer scroll body iOS
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+
+        function ecouterAnnoncePhase() {
+            if (!gameRef) return;
+            gameRef.child('state/phaseAnnonce').on('value', (snap) => {
+                const annonce = snap.val();
+                const overlay = document.getElementById('phaseOverlay');
+                if (!overlay) return;
+                if (annonce && annonce.phase) {
+                    showPhaseOverlay(annonce.phase, annonce.cause || '');
+                } else {
+                    overlay.classList.remove('visible');
+                    // Restaurer scroll body iOS (non-hôte)
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.width = '';
+                }
+            });
+        }
+
         async function checkPhaseTransition() {
             const players = getOrderedPlayers();
             const phase = gameState.phase || 1;
@@ -8200,9 +8448,27 @@ function initSystemeDe() {
             if (phase === 1 && passagesTotal >= seuilPhase2) {
                 await gameRef.child('state/phase').set(2);
                 sendSystemMessage(`📊 PHASE 2 ! L'érosion commence... (${passagesTotal} passages Ligne 1)`);
+                // Overlay visible par tous
+                await gameRef.child('state/phaseAnnonce').set({
+                    phase: 2,
+                    cause: `${passagesTotal} passages Ligne 1 — l'économie se dégrade`,
+                    timestamp: Date.now()
+                });
             } else if (phase === 2 && (tauxEmploi < seuilPhase3Emploi || detteTotale > seuilPhase3Dette || passagesTotal >= seuilPhase3Passages)) {
                 await gameRef.child('state/phase').set(3);
-                sendSystemMessage(`🌍 PHASE 3 ! Effondrement...`);
+                await gameRef.child('state/tauxTaxePhase3').set(0.10);
+                // Déterminer la cause
+                let cause3 = '';
+                if (detteTotale > seuilPhase3Dette) cause3 = `Dette totale ${detteTotale}€ > ${seuilPhase3Dette}€ — l'économie est sous perfusion bancaire`;
+                else if (tauxEmploi < seuilPhase3Emploi) cause3 = `Taux d'emploi ${tauxEmploi}% < ${seuilPhase3Emploi}% — le chômage s'installe`;
+                else cause3 = `${passagesTotal} passages Ligne 1 — les ressources s'épuisent`;
+                sendSystemMessage(`🌍 PHASE 3 ! Effondrement... (${cause3})`);
+                // Overlay visible par tous
+                await gameRef.child('state/phaseAnnonce').set({
+                    phase: 3,
+                    cause: cause3,
+                    timestamp: Date.now()
+                });
             }
         }
         
@@ -9549,6 +9815,16 @@ function initSystemeDe() {
         // Emprunter puis payer
         async function emprunterEtPayer(caseId, ownerId, facture, montantEmprunt) {
             closeModal();
+            
+            // Vérification BCE 10% - affectation automatique si nécessaire
+            const verifEtP = banquePeutPreter(montantEmprunt);
+            if (!verifEtP.peutPreter) {
+                const glEtP = COMPTABILITE.banque.grandLivre;
+                const resultatEtP = (glEtP[4000] || 0) - (glEtP[5000] || 0);
+                if (resultatEtP > 0) {
+                    await affecterResultatEnReserves(); // affectation automatique si prêt urgent
+                }
+            }
             
             // 1. Emprunter à la banque
             await comptaEmprunt(myPlayerId, montantEmprunt);
@@ -10960,6 +11236,14 @@ function initSystemeDe() {
         async function createDebt(ownerId, amount) {
             closeModal();
             
+            // Vérification BCE 10% - affectation automatique si résultat disponible
+            const verifCD = banquePeutPreter(amount);
+            if (!verifCD.peutPreter) {
+                const glCD = COMPTABILITE.banque.grandLivre;
+                const resultatCD = (glCD[4000] || 0) - (glCD[5000] || 0);
+                if (resultatCD > 0) await affecterResultatEnReserves();
+            }
+            
             // Comptabilité - emprunt forcé à la banque pour payer
             const ecritureEmprunt = await comptaEmprunt(myPlayerId, amount);
             
@@ -11157,7 +11441,8 @@ function initSystemeDe() {
             const patrimoine = calculerPatrimoine(myPlayerId);
             const caisse = COMPTABILITE.caisseJoueurs[myPlayerId] || {};
             const phase = gameState?.phase || 1;
-            const taxeEstimee = Math.floor(patrimoine * 0.10);
+            const tauxTaxe = (gameState?.tauxTaxePhase3 ?? 0.10);
+            const taxeEstimee = Math.floor(patrimoine * tauxTaxe);
             
             // Détail du patrimoine
             let detailHtml = '';
@@ -11184,15 +11469,34 @@ function initSystemeDe() {
             }
             
             if (phase >= 3) {
-                // Phase 3 : pas de taxe, juste informatif
-                showModal(`
-                    <h3>🏛️ Case Taxe</h3>
-                    <div style="background: #f0fdf4; padding: 12px; border-radius: 8px; margin: 10px 0;">
-                        <p style="margin: 0; text-align: center; color: #059669;">
-                            Phase 3 : taxe Ligne 3 <strong>supprimée</strong> ✅
-                        </p>
-                    </div>
-                `, `<button class="btn btn-primary" onclick="safeNextTurn();">OK ✓</button>`);
+                // Phase 3 : taxe AUGMENTÉE (austérité)
+                const tauxP3 = gameState?.tauxTaxePhase3 ?? 0.10;
+                const pctP3 = Math.round(tauxP3 * 100);
+                const taxeP3 = Math.floor(patrimoine * tauxP3);
+                document.getElementById('modalContainer').innerHTML = `
+                    <div class="modal-overlay">
+                        <div class="modal">
+                            <h3>🏛️ Austérité — Déclaration fiscale</h3>
+                            <div style="background:#fee2e2; padding:12px; border-radius:8px; margin:10px 0;">
+                                <p style="margin:0; font-weight:bold; color:#dc2626;">
+                                    📢 L'État est endetté. Pour réduire la dette de l'État, nous devons augmenter les taxes et réduire nos dépenses — même en période de crise.
+                                </p>
+                            </div>
+                            <div style="background:#fef3c7; padding:12px; border-radius:8px; margin:10px 0;">
+                                <p style="margin:4px 0;">Patrimoine : <strong>${fmt(patrimoine)}€</strong></p>
+                                <p style="margin:4px 0;">Taux d'austérité : <strong style="color:#dc2626;">${pctP3}%</strong></p>
+                                <p style="margin:4px 0; font-weight:bold; font-size:1.05rem;">
+                                    💸 Taxe due : <strong>${fmt(taxeP3)}€</strong>
+                                </p>
+                            </div>
+                            <div class="modal-buttons">
+                                <button class="btn btn-primary" style="width:100%;"
+                                    onclick="validerDeclarationFiscale();">
+                                    ✅ Payer ${fmt(taxeP3)}€
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
                 return;
             }
             
@@ -11554,6 +11858,16 @@ function initSystemeDe() {
                 
                 if (isNewRound) {
                     await checkPhaseTransition();
+                    // Phase 3 : augmentation des taxes à chaque tour complet
+                    const phaseActuelle = gameState?.phase || 1;
+                    if (phaseActuelle >= 3) {
+                        const tauxActuel = gameState?.tauxTaxePhase3 ?? 0.10;
+                        const nouveauTaux = Math.min(tauxActuel + 0.02, 0.40); // max 40%
+                        await gameRef.child('state/tauxTaxePhase3').set(nouveauTaux);
+                        const pct = Math.round(nouveauTaux * 100);
+                        const msg = `🏛️ Austérité — Tour ${toursComplets} : L'État est endetté. Pour réduire la dette de l'État, nous devons augmenter les taxes et réduire nos dépenses — même en période de crise. Nouveau taux : ${pct}%`;
+                        sendSystemMessage(msg);
+                    }
                 }
             } catch (err) {
                 console.error('Erreur dans nextTurn:', err);
@@ -11959,8 +12273,18 @@ function initSystemeDe() {
                 // Intérêts découvert même quand on passe
                 const caisseSk = COMPTABILITE.caisseJoueurs[bot.id] || {};
                 if ((caisseSk.euro || 0) < 0) {
-                    const interetsDec = arrondir2(Math.abs(caisseSk.euro) * 0.03);
+                    const decouvertSk = Math.abs(caisseSk.euro);
+                    const interetsDec = arrondir2(decouvertSk * 0.03);
                     caisseSk.euro -= interetsDec;
+                    // Écriture comptable banque
+                    enregistrerEcritureBanque({
+                        event_type: 'OVERDRAFT_INTEREST',
+                        debit_account: 1010,
+                        credit_account: 4000,
+                        amount: interetsDec,
+                        playerId: bot.id,
+                        description: `Intérêts découvert 3% bot (tour passé) sur ${decouvertSk.toFixed(2)}€`
+                    });
                     await db.ref(`parties/${currentGameCode}/players/${bot.id}/euro`).set(caisseSk.euro);
                     sendSystemMessage(`📉 ${bot.name} : intérêts découvert 3% = -${fmt(interetsDec)}€`);
                 }
@@ -11974,8 +12298,18 @@ function initSystemeDe() {
             // ── INTÉRÊTS DÉCOUVERT 3% BOT ──
             const caisseBot = COMPTABILITE.caisseJoueurs[bot.id] || {};
             if ((caisseBot.euro || 0) < 0) {
-                const interetsDecBot = arrondir2(Math.abs(caisseBot.euro) * 0.03);
+                const decouvertBot = Math.abs(caisseBot.euro);
+                const interetsDecBot = arrondir2(decouvertBot * 0.03);
                 caisseBot.euro -= interetsDecBot;
+                // Écriture comptable banque
+                enregistrerEcritureBanque({
+                    event_type: 'OVERDRAFT_INTEREST',
+                    debit_account: 1010,
+                    credit_account: 4000,
+                    amount: interetsDecBot,
+                    playerId: bot.id,
+                    description: `Intérêts découvert 3% bot sur ${decouvertBot.toFixed(2)}€`
+                });
                 await db.ref(`parties/${currentGameCode}/players/${bot.id}/euro`).set(caisseBot.euro);
                 await syncComptabiliteToFirebase();
                 sendSystemMessage(`📉 ${bot.name} : intérêts découvert 3% = -${fmt(interetsDecBot)}€ (solde: ${fmt(caisseBot.euro)}€)`);
@@ -14294,8 +14628,9 @@ function initSystemeDe() {
             const produitsInterets = (gl[4000] || 0);
             const dotationProvision = (gl[5000] || 0);
             const resultatNet = produitsInterets - dotationProvision;
-            // Capitaux propres affichés = réserves/résultat cumulés + résultat courant
-            const cpAffiche = (gl[3100] || 0) + resultatNet;
+            // Capitaux propres : séparation réserves affectées et résultat non affecté
+            const reservesAffectees = (gl[3100] || 0);
+            const resultatNonAffecte = resultatNet;
             const ratioCapital = E > 0 ? ((C / E) * 100).toFixed(1) : 0;
             const ratioProvision = E > 0 ? ((P / E) * 100).toFixed(1) : 0;
             
@@ -14332,9 +14667,10 @@ function initSystemeDe() {
                         <table style="width:100%; font-size:0.85rem; margin-top:8px;">
                             <tr><td>2290 - Provisions (P)</td><td style="text-align:right;">${P.toFixed(0)}€</td></tr>
                             <tr style="background:#fee2e2;"><td>3000 - Capital banque</td><td style="text-align:right;">${C.toFixed(0)}€</td></tr>
-                            <tr style="background:#fee2e2;"><td>3100 - Réserves / Résultat</td><td style="text-align:right;">${cpAffiche.toFixed(0)}€</td></tr>
+                            <tr style="background:#fee2e2;"><td>3100 - Réserves affectées</td><td style="text-align:right;">${reservesAffectees.toFixed(0)}€</td></tr>
+                            <tr style="background:#fef3c7;"><td>3900 - Résultat non affecté</td><td style="text-align:right;">${resultatNonAffecte.toFixed(0)}€</td></tr>
                             <tr style="border-top:2px solid #dc2626; font-weight:bold;">
-                                <td>TOTAL</td><td style="text-align:right;">${(P + C + cpAffiche).toFixed(0)}€</td>
+                                <td>TOTAL</td><td style="text-align:right;">${(P + C + reservesAffectees + resultatNonAffecte).toFixed(0)}€</td>
                             </tr>
                         </table>
                     </div>
@@ -14708,7 +15044,8 @@ function initSystemeDe() {
                             <table style="width: 100%; font-size: 0.75rem; margin-top: 5px;">
                                 <tr><td>2290 Provision</td><td style="text-align:right;">${(gl[2290] || 0).toFixed(0)}€</td></tr>
                                 <tr style="background: #fee2e2;"><td>3000 Capital banque</td><td style="text-align:right;">${(gl[3000] || 0).toFixed(0)}€</td></tr>
-                                <tr style="background: #fee2e2;"><td>3100 Réserves / Résultat</td><td style="text-align:right;">${(gl[3100] || 0).toFixed(0)}€</td></tr>
+                                <tr style="background: #fee2e2;"><td>3100 Réserves affectées</td><td style="text-align:right;">${(gl[3100] || 0).toFixed(0)}€</td></tr>
+                                <tr style="background: #fef3c7;"><td>3900 Résultat non affecté</td><td style="text-align:right;">${bilanBanque.resultat.resultatNet.toFixed(0)}€</td></tr>
                             </table>
                             <hr style="margin: 5px 0; border-color: #fca5a5;">
                             <p style="margin: 0; font-weight: bold; font-size: 0.85rem; text-align: right;">
@@ -14799,6 +15136,14 @@ function initSystemeDe() {
         async function takeBankLoan() {
             const amount = parseInt(document.getElementById('bankLoanAmount').value) || 0;
             if (amount <= 0) return;
+            
+            // Vérification BCE 10%
+            const verifTBL = banquePeutPreter(amount);
+            if (!verifTBL.peutPreter) {
+                closeModal();
+                showAffectationModal(amount, false);
+                return;
+            }
             
             await comptaEmprunt(myPlayerId, amount);
             
@@ -15579,9 +15924,155 @@ function initSystemeDe() {
             }
         }
         
+        // ========== AFFECTATION RÉSULTAT 3900 → 3100 ==========
+        async function affecterResultatEnReserves() {
+            normalizeComptabilite();
+            const gl = COMPTABILITE.banque.grandLivre;
+            const produitsInterets = (gl[4000] || 0);
+            const dotationProvision = (gl[5000] || 0);
+            const resultatNet = produitsInterets - dotationProvision;
+            
+            if (resultatNet <= 0) return { success: false, message: 'Aucun résultat positif à affecter' };
+            
+            // Double écriture : D:3900 Résultat non affecté / C:3100 Réserves affectées
+            // Techniquement : on vide le résultat courant vers 3100
+            // Le résultat courant est calculé depuis gl[4000] et gl[5000]
+            // On le matérialise en transférant vers 3100
+            enregistrerEcritureBanque({
+                event_type: 'RESULT_AFFECTATION',
+                debit_account: 4000,  // Solde produits intérêts (vidé vers réserves)
+                credit_account: 3100, // Réserves affectées
+                amount: resultatNet,
+                description: `Affectation résultat en réserves: ${resultatNet.toFixed(2)}€`
+            });
+            // Contre-écriture pour équilibrer (les charges aussi)
+            if (dotationProvision > 0) {
+                enregistrerEcritureBanque({
+                    event_type: 'RESULT_AFFECTATION',
+                    debit_account: 3100, // Réserves (charges absorbées)
+                    credit_account: 5000, // Solde dotation provision (vidé)
+                    amount: dotationProvision,
+                    description: `Absorption charges en réserves: ${dotationProvision.toFixed(2)}€`
+                });
+            }
+
+            await syncComptabiliteToFirebase();
+            
+            sendSystemMessage(`🏦 La banque affecte ${resultatNet.toFixed(0)}€ de bénéfices en réserves légales (3100). Capital disponible augmenté.`);
+            
+            return { success: true, montant: resultatNet };
+        }
+
+        function showAffectationModal(montantPret, forced = false) {
+            normalizeComptabilite();
+            const gl = COMPTABILITE.banque.grandLivre;
+            const produitsInterets = (gl[4000] || 0);
+            const dotationProvision = (gl[5000] || 0);
+            const resultatNet = produitsInterets - dotationProvision;
+            const capitalActuel = (gl[3000] || 0) + (gl[3100] || 0);
+            const capitalApres = capitalActuel + resultatNet;
+            const E_actuel = (gl[1200] || 0);
+            const E_apres = E_actuel + montantPret;
+            const C_requis = 0.10 * E_apres;
+            const peutPreterApres = capitalApres >= C_requis;
+
+            showModal(`
+                <h3>🏦 Capital bancaire insuffisant</h3>
+
+                <div style="background:#fee2e2; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <p style="margin:0; font-weight:bold; color:#dc2626;">⚠️ La banque ne peut pas accorder ce prêt de ${montantPret}€</p>
+                    <div style="background:white; padding:8px; border-radius:6px; margin-top:8px; font-size:0.82rem;">
+                        <p style="margin:0; font-weight:bold; color:#991b1b;">📐 Règle BCE — Ratio de solvabilité 10%</p>
+                        <p style="margin:6px 0 0 0;">Encours actuel : <strong>${E_actuel}€</strong> → après ce prêt : <strong>${E_apres}€</strong></p>
+                        <p style="margin:4px 0 0 0;">Capital requis (10% × ${E_apres}€) : <strong>${C_requis.toFixed(0)}€</strong></p>
+                        <p style="margin:4px 0 0 0;">Capital disponible (3000+3100) : <strong>${capitalActuel}€</strong></p>
+                        <p style="margin:4px 0 0 0; color:#dc2626; font-weight:bold;">Déficit : ${(C_requis - capitalActuel).toFixed(0)}€</p>
+                        <p style="margin:6px 0 0 0; font-size:0.78rem; color:#6b7280; font-style:italic;">
+                            La BCE impose qu'une banque détienne au minimum 10% de ses encours en fonds propres pour garantir sa solvabilité.
+                        </p>
+                    </div>
+                </div>
+
+                ${resultatNet > 0 ? `
+                <div style="background:#fef3c7; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <p style="margin:0; font-weight:bold; color:#92400e;">💡 Solution : affecter les bénéfices en réserves légales</p>
+                    <p style="margin:8px 0 0 0; font-size:0.85rem;">
+                        La banque a accumulé <strong style="color:#059669;">+${resultatNet.toFixed(0)}€ de bénéfices</strong>
+                        (compte 3900 - Résultat non affecté).<br><br>
+                        En les transférant en réserves légales (3100), le capital passe
+                        de <strong>${capitalActuel}€</strong> à <strong>${capitalApres.toFixed(0)}€</strong>.
+                    </p>
+                    <div style="background:white; padding:8px; border-radius:6px; margin-top:8px; font-size:0.8rem; font-family:monospace;">
+                        <div style="color:#dc2626;">D: 3900 Résultat non affecté &nbsp;${resultatNet.toFixed(0)}€</div>
+                        <div style="color:#059669;">C: 3100 Réserves affectées &nbsp;&nbsp;&nbsp;${resultatNet.toFixed(0)}€</div>
+                    </div>
+                    <p style="margin:8px 0 0 0; font-size:0.78rem; color:#6b7280; font-style:italic;">
+                        🔁 Les bénéfices bancaires → capital → plus de prêts → plus d'intérêts → la spirale s'accélère.
+                    </p>
+                    ${peutPreterApres ?
+                        '<p style="margin:8px 0 0 0; color:#059669; font-weight:bold;">✅ Après affectation, le ratio sera ' + ((capitalApres/E_apres)*100).toFixed(1) + '% ≥ 10% → prêt possible.</p>' :
+                        '<p style="margin:8px 0 0 0; color:#dc2626;">⚠️ Même après affectation : capital ' + capitalApres.toFixed(0) + '€ / requis ' + C_requis.toFixed(0) + '€ → prêt toujours insuffisant.</p>'
+                    }
+                </div>
+                ` : `
+                <div style="background:#f3f4f6; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <p style="margin:0; color:#6b7280;">Aucun bénéfice disponible à affecter (3900 = 0€).</p>
+                </div>
+                `}
+
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    ${resultatNet > 0 ? `
+                    <button class="btn" style="background:#059669; color:white; flex:1; padding:10px;"
+                        onclick="confirmerAffectationEtPreter(${montantPret}, ${forced})">
+                        ✅ Affecter et ${peutPreterApres ? 'emprunter' : 'tenter quand même'}
+                    </button>` : ''}
+                    <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">
+                        ${forced ? '⚠️ Fermer' : '❌ Annuler'}
+                    </button>
+                </div>
+            `);
+        }
+
+        async function confirmerAffectationEtPreter(montant, forced = false) {
+            closeModal();
+            await affecterResultatEnReserves();
+            // Tenter le prêt après affectation
+            const ecriture = await comptaEmprunt(myPlayerId, montant);
+            const caisse = COMPTABILITE.caisseJoueurs[myPlayerId];
+            await db.ref(`parties/${currentGameCode}/players/${myPlayerId}`).update({
+                euro: caisse.euro,
+                emprunt: caisse.emprunt
+            });
+            await syncComptabiliteToFirebase();
+            updatePlayersUI();
+            logEvent('BANK_LOAN', myPlayerId, { montant, currency: 'EUR', nouvelleDetteTotal: caisse.emprunt }, []);
+            const tauxInteret = gameConfig.tauxInteret || CONFIG.tauxInteret;
+            const interetParTour = Math.floor(caisse.emprunt * tauxInteret);
+            sendSystemMessage(`🏦 ${myName} emprunte ${fmt(montant)}€ (dette: ${fmt(caisse.emprunt)}€, intérêts: ${fmt(interetParTour)}€/tour)`);
+        }
+
         async function executeEmprunterEuro() {
             const montant = parseInt(document.getElementById('empruntEuroMontant').value) || 0;
             if (montant <= 0) return;
+
+            // Vérifier si la banque peut prêter
+            const verif = banquePeutPreter(montant);
+            if (!verif.peutPreter) {
+                // Vérifier s'il y a un résultat à affecter
+                const gl = COMPTABILITE.banque.grandLivre;
+                const resultatNet = (gl[4000] || 0) - (gl[5000] || 0);
+                if (resultatNet > 0) {
+                    closeModal();
+                    showAffectationModal(montant);
+                    return;
+                }
+                // Pas de résultat disponible → refus simple
+                closeModal();
+                showModal(`<h3>🏦 Prêt refusé</h3>
+                    <p style="color:#dc2626;">⚠️ Capital bancaire insuffisant (déficit: ${verif.deficit.toFixed(0)}€) et aucun bénéfice à affecter.</p>`,
+                    `<button class="btn btn-secondary" onclick="closeModal()">Fermer</button>`);
+                return;
+            }
             
             closeModal();
             const ecriture = await comptaEmprunt(myPlayerId, montant);
@@ -16981,3 +17472,4 @@ function initSystemeDe() {
     </script>
 </body>
 </html>
+
