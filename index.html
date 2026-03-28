@@ -6449,6 +6449,19 @@ if (gameData.status !== 'waiting') { showError('Partie déjà commencée !'); re
             // Sauvegarder la comptabilité mise à jour
             await syncComptabiliteToFirebase();
             
+            // ── Calibrage automatique des paramètres selon le nombre de joueurs ──
+            // Appliqué uniquement si l'hôte n'a pas déjà sauvegardé une config personnalisée.
+            const configSnap = await db.ref(`parties/${currentGameCode}/config`).once('value');
+            const configExistante = configSnap.val();
+            if (!configExistante || configExistante.phase2_passagesMin === CONFIG.phase2_passagesMin) {
+                const calibrage = calibrerConfigPourN(nbJoueurs);
+                gameConfig.phase2_passagesMin = calibrage.phase2_passagesMin;
+                gameConfig.phase3_passagesMin = calibrage.phase3_passagesMin;
+                gameConfig.phase3_detteMax    = calibrage.phase3_detteMax;
+                await db.ref(`parties/${currentGameCode}/config`).set(gameConfig);
+                sendSystemMessage(`⚙️ Paramètres calibrés pour ${nbJoueurs} joueurs : Phase 2 → ${calibrage.phase2_passagesMin} passages | Phase 3 → ${calibrage.phase3_passagesMin} passages | Dette max → ${calibrage.phase3_detteMax}€`);
+            }
+
             // Démarrer la partie
             await gameRef.child('state/started').set(true);
             await gameRef.child('status').set('playing');
@@ -6537,6 +6550,19 @@ Conserve ce fichier pour rejoindre la partie en cas de déconnexion.`;
         }
         
         // ========== CONFIGURATION PARTIE ==========
+        // ========== CALIBRAGE AUTOMATIQUE SELON N JOUEURS ==========
+        // Calcule les 3 paramètres qui dépendent du nombre de joueurs.
+        // Formules issues de 7 680 simulations Monte Carlo :
+        //   phase2 = N × 3          (cible Phase 2 ≈ 45 min)
+        //   phase3 = N × 3.5 arrondi au pair supérieur (cible Phase 3 ≈ 90 min)
+        //   detteMax = N × 450€     (dette totale proportionnelle au groupe)
+        function calibrerConfigPourN(n) {
+            const phase2 = n * 3;
+            const phase3 = Math.ceil(n * 3.5 / 2) * 2;
+            const detteMax = n * 450;
+            return { phase2_passagesMin: phase2, phase3_passagesMin: phase3, phase3_detteMax: detteMax };
+        }
+
         async function showConfigModal() {
             // Récupérer le sens actuel du joueur
             const sensPersoSnap = await gameRef.child(`sensJoueurs/${myPlayerId}`).once('value');
@@ -6817,7 +6843,7 @@ Conserve ce fichier pour rejoindre la partie en cas de déconnexion.`;
             // Afficher/masquer le bouton Config pour l'host
             const configBtn = document.getElementById('configBtn');
             if (configBtn) {
-                configBtn.style.display = isHost ? 'block' : 'none';
+                configBtn.style.display = (isHost && (gameState.turn || 1) <= 1) ? 'block' : 'none';
             }
             // Afficher/masquer le bouton Fin de partie pour l'host
             const endGameBtn = document.getElementById('endGameBtn');
